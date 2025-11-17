@@ -18,7 +18,6 @@ pipeline {
       steps {
         sh '''
           set -e
-          # npm ci быстрее и детерминированнее, fallback на npm install
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
         '''
       }
@@ -33,8 +32,6 @@ pipeline {
       }
     }
 
-    // Оставь этот stage, если используешь logos/main|dev/logo.svg.
-    // ИЛИ удали stage, если держишь разные src/logo.svg по веткам.
     stage('Pick logo by branch') {
       steps {
         sh '''
@@ -65,13 +62,11 @@ pipeline {
       steps {
         sh '''
           set -e
-          # Остановить/удалить только свой контейнер
           if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
             docker stop ${CONTAINER_NAME} || true
             docker rm   ${CONTAINER_NAME} || true
           fi
 
-          # Освободить порт, если занят другим контейнером
           USED=$(docker ps --filter "publish=${PORT}" --format '{{.Names}}' || true)
           if [ -n "$USED" ] && [ "$USED" != "${CONTAINER_NAME}" ]; then
             echo "Port ${PORT} is used by $USED. Stopping it..."
